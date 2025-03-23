@@ -5,6 +5,6 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   preview: {
-    allowedHosts: ["hackdays.tech"],
+    allowedHosts: ["test.hackdays.online"],
   },
 })
