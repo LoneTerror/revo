@@ -13,15 +13,18 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     try {
       const success = await login(username, password);
       if (success) {
-        navigate('/');
+        console.log('Login successful, navigating...');
+        navigate('/'); // No replace: true
+        console.log('Navigation complete');
       } else {
         setError('Invalid credentials');
       }
     } catch (err) {
+      console.error('Login error:', err);
       setError('An error occurred during login');
     }
   };
@@ -80,6 +83,12 @@ const Login = () => {
             Sign in
           </button>
         </form>
+
+        {/* Back Button (Fixes Issue) */}
+        <button onClick={() => navigate('/')} className="mt-4 w-full flex justify-center py-2 px-4 border rounded-md text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300">
+          Go Back
+        </button>
+
       </div>
     </div>
   );
