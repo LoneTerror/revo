@@ -19,14 +19,18 @@ interface VoterDetails {
 const VerifyVoter = () => {
   const [voterId, setVoterId] = useState('');
   const [voterDetails, setVoterDetails] = useState<VoterDetails | null>(null);
-
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false); // Added loading state
+
 
   const handleSearch = async () => {
     try {
-      const response = await fetch(`/api/verify/${voterId}`);
+      const response = await fetch(`http://localhost:5000/verify/${voterId}`);
+
+
       if (!response.ok) {
-        throw new Error('Voter not found');
+        throw new Error(errorData.error || 'Voter not found');
+
       }
       const data = await response.json();
       setVoterDetails(data);
