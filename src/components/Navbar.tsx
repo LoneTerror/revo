@@ -8,7 +8,6 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-
   const handleLogout = () => {
     logout();
     navigate('/');
@@ -47,6 +46,18 @@ const Navbar = () => {
                   }`}
                 >
                   Dashboard
+                </Link>
+              )}
+              {isAuthenticated && ( // Added Verify Voter link
+                <Link
+                  to="/verifyvoter"
+                  className={`inline-flex items-center px-1 pt-1 text-sm font-medium ${
+                    location.pathname.startsWith('/verifyvoter')
+                      ? 'text-blue-600 border-b-2 border-blue-600'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Verify Voter
                 </Link>
               )}
             </div>
