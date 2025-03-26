@@ -20,10 +20,9 @@ const Navbar = () => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
               <div className="flex items-center gap-2 text-blue-600">
-                <Vote size={24} />
-                <Shield size={24} />
+              <img src="https://i.imgur.com/Do9TlC0.png" width={30} alt="Rev-Vote Logo" />
               </div>
-              <span className="text-xl font-bold text-gray-900">VoterVerify</span>
+              <span className="text-xl font-trainone text-cyan-600">Rev-Vote</span>
             </Link>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
               <Link
