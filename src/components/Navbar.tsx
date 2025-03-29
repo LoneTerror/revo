@@ -14,13 +14,13 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-gray shadow-sm sticky top-0 z-50">
+    <nav className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
               <div className="flex items-center gap-2 text-blue-600">
-              <img src="https://i.imgur.com/Do9TlC0.png" width={30} alt="Rev-Vote Logo" />
+                <img src="https://i.imgur.com/Do9TlC0.png" width={30} alt="Rev-Vote Logo" />
               </div>
               <span className="text-xl font-trainone text-cyan-600">Rev-Vote</span>
             </Link>
@@ -47,7 +47,7 @@ const Navbar = () => {
                   Dashboard
                 </Link>
               )}
-              {isAuthenticated && ( // Added Verify Voter link
+              {isAuthenticated && (
                 <Link
                   to="/verifyvoter"
                   className={`inline-flex items-center px-1 pt-1 text-sm font-medium ${
@@ -84,6 +84,6 @@ const Navbar = () => {
       </div>
     </nav>
   );
-}
+};
 
 export default Navbar;
