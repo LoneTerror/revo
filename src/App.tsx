@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Landing from './pages/Landing';
 import VerifyVoter from './pages/VerifyVoter';
+import OfficerPanel from './pages/OfficerPanel';
 import Layout from './components/layout';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
@@ -47,6 +48,14 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['admin', 'officer']}>
                   <VerifyVoter />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/officer"
+              element={
+                <ProtectedRoute allowedRoles={['officer']}>
+                  <OfficerPanel />
                 </ProtectedRoute>
               }
             />
