@@ -4,7 +4,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Landing from './pages/Landing';
 import VerifyVoter from './pages/VerifyVoter';
-import Layout from './components/Layout';
+import Layout from './components/layout';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 interface ProtectedRouteProps {
