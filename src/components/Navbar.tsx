@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Vote, Shield, LogIn, LogOut } from 'lucide-react';
+import { Vote, Shield, LogIn, LogOut, UserCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Navbar = () => {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, role, username } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -35,7 +35,7 @@ const Navbar = () => {
               >
                 Home
               </Link>
-              {isAuthenticated && (
+              {isAuthenticated && role === 'admin' && (
                 <Link
                   to="/dashboard"
                   className={`inline-flex items-center px-1 pt-1 text-sm font-medium ${
@@ -61,7 +61,15 @@ const Navbar = () => {
               )}
             </div>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center space-x-4">
+            {isAuthenticated && (
+              <div className="flex items-center text-sm text-gray-700">
+                <span className="mr-2">
+                  {role === 'admin' ? <Shield className="h-4 w-4" /> : <UserCircle className="h-4 w-4" />}
+                </span>
+                <span>{username}</span>
+              </div>
+            )}
             {isAuthenticated ? (
               <button
                 onClick={handleLogout}

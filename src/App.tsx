@@ -3,41 +3,55 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Landing from './pages/Landing';
-import Navbar from './components/Navbar';
 import VerifyVoter from './pages/VerifyVoter';
+import Layout from './components/Layout';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  allowedRoles?: Array<'admin' | 'officer'>;
+}
+
+const ProtectedRoute = ({ children, allowedRoles = [] }: ProtectedRouteProps) => {
+  const { isAuthenticated, role } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+
+  if (allowedRoles.length > 0 && role && !allowedRoles.includes(role)) {
+    return <Navigate to="/" />;
+  }
+
+  return <>{children}</>;
 };
 
 function App() {
   return (
     <AuthProvider>
       <Router>
-        <Navbar />
-<Routes>
-  <Route path="/" element={<Landing />} />
-  <Route path="/login" element={<Login />} />
-  <Route
-    path="/dashboard/*"
-    element={
-      <ProtectedRoute>
-        <Dashboard />
-      </ProtectedRoute>
-    }
-  />
-  <Route
-    path="/verifyvoter"
-    element={
-      <ProtectedRoute>
-        <VerifyVoter />
-      </ProtectedRoute>
-    }
-  />
-</Routes>
-
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/dashboard/*"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/verifyvoter"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'officer']}>
+                  <VerifyVoter />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </Layout>
       </Router>
     </AuthProvider>
   );

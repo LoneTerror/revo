@@ -14,6 +14,6 @@ const Layout = ({ children }: LayoutProps) => {
       </main>
     </div>
   );
-};
+};  
 
 export default Layout;
