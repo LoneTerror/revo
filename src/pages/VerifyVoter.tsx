@@ -33,7 +33,7 @@ const VerifyVoter = () => {
     setFingerPrintStatus(null);
 
     try {
-      const response = await fetch(`http://localhost:5000/verify/${voterId}`);
+      const response = await fetch(`http://localhost:5006/verify/${voterId}`);
       
       if (!response.ok) {
         throw new Error(response.status === 404 ? 'Voter not found' : 'Failed to fetch voter details');
