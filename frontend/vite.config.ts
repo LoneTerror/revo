@@ -10,4 +10,9 @@ export default defineConfig({
   preview: {
     allowedHosts: ["revvote.site"],
   },
+  build: {
+    rollupOptions: {
+    },
+    chunkSizeWarningLimit: 1000, // Increased to 1000 KB (1MB)
+  },
 });
