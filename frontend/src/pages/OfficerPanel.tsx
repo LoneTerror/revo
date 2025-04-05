@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { UserCheck, UserX, AlertCircle, Clock, Fingerprint, Usb, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 
 interface VoterVerification {
@@ -205,6 +205,7 @@ const OfficerPanel = () => {
       rejected: 'bg-red-100 text-red-800',
       pending: 'bg-yellow-100 text-yellow-800'
     };
+    
     
     const icons = {
       verified: <UserCheck size={16} />,

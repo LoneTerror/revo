@@ -1,29 +1,41 @@
-import React from 'react';
-import { Check, X, Clock } from 'lucide-react';
+import { Check, X, Clock, LucideIcon } from 'lucide-react';
 
-const activities = [
+interface Activity {
+  id: number;
+  type: 'verified' | 'pending' | 'rejected'; // Explicitly define the possible values for 'type'
+  voter: string;
+  time: string;
+}
+
+const activities: Activity[] = [
   {
     id: 1,
     type: 'verified',
-    voter: 'John Doe',
+    voter: 'John Wick',
     time: '2 minutes ago',
   },
   {
     id: 2,
     type: 'pending',
-    voter: 'Jane Smith',
+    voter: 'Will Smith',
     time: '5 minutes ago',
   },
   {
     id: 3,
     type: 'rejected',
-    voter: 'Mike Johnson',
+    voter: 'Mike Tyson',
     time: '10 minutes ago',
   },
   // Add more activities as needed
 ];
 
-const typeConfig = {
+interface TypeConfig {
+  verified: { icon: LucideIcon; className: string };
+  pending: { icon: LucideIcon; className: string };
+  rejected: { icon: LucideIcon; className: string };
+}
+
+const typeConfig: TypeConfig = {
   verified: { icon: Check, className: 'bg-green-100 text-green-600' },
   pending: { icon: Clock, className: 'bg-yellow-100 text-yellow-600' },
   rejected: { icon: X, className: 'bg-red-100 text-red-600' },

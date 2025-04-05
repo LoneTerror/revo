@@ -1,10 +1,9 @@
-import React from 'react';
 import { Check, X, Clock } from 'lucide-react';
 
 const mockData = [
-  { id: 1, name: 'John Doe', voterId: 'VOT001', status: 'verified', timestamp: '2024-03-10 14:30' },
-  { id: 2, name: 'Jane Smith', voterId: 'VOT002', status: 'pending', timestamp: '2024-03-10 14:35' },
-  { id: 3, name: 'Mike Johnson', voterId: 'VOT003', status: 'rejected', timestamp: '2024-03-10 14:40' },
+  { id: 1, name: 'John Wick', voterId: 'VOT001', status: 'verified', timestamp: '2024-03-10 14:30' },
+  { id: 2, name: 'Will Smith', voterId: 'VOT002', status: 'pending', timestamp: '2024-03-10 14:35' },
+  { id: 3, name: 'Mike Tyson', voterId: 'VOT003', status: 'rejected', timestamp: '2024-03-10 14:40' },
   // Add more mock data as needed
 ];
 
@@ -39,7 +38,7 @@ function VoterTable() {
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {mockData.map((voter) => {
-            const StatusIcon = statusConfig[voter.status].icon;
+            const StatusIcon = statusConfig[voter.status as keyof typeof statusConfig].icon;
             return (
               <tr key={voter.id}>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -49,7 +48,7 @@ function VoterTable() {
                   <div className="text-sm text-gray-500">{voter.voterId}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig[voter.status].className}`}>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig[voter.status as keyof typeof statusConfig].className}`}>
                     <StatusIcon className="w-4 h-4 mr-1" />
                     {voter.status.charAt(0).toUpperCase() + voter.status.slice(1)}
                   </span>

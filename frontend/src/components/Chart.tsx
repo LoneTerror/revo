@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 function Chart() {
   // This is a placeholder for the chart component

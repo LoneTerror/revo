@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { Users, CheckCircle, XCircle, Clock, Search, Filter, Download, Trash2, Edit, Eye } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -70,7 +70,7 @@ const Dashboard = () => {
     }
   ]);
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: Voter['status']) => { // More specific type for status
     const colors = {
       verified: 'bg-green-100 text-green-800',
       rejected: 'bg-red-100 text-red-800',

@@ -1,6 +1,6 @@
-import React from 'react';
+
 import { Link } from 'react-router-dom';
-import { Vote, Shield, CheckCircle, Lock, Clock, ArrowRight } from 'lucide-react';
+import { CheckCircle, Lock, Clock, ArrowRight } from 'lucide-react';
 
 
 const Landing = () => {

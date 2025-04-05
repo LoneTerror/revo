@@ -1,6 +1,5 @@
-import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Vote, Shield, LogIn, LogOut, UserCircle } from 'lucide-react';
+import { Shield, LogIn, LogOut, UserCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Navbar = () => {
