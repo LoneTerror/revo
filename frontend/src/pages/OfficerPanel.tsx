@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserCheck, UserX, AlertCircle, Clock, Search, Fingerprint, Usb, CheckCircle, XCircle, UserPlus } from 'lucide-react';
+import { UserCheck, UserX, AlertCircle, Clock, Fingerprint, Usb, CheckCircle, XCircle } from 'lucide-react';
 
 interface VoterVerification {
   id: string;
@@ -15,21 +15,13 @@ interface ScannerStatus {
   message: string;
 }
 
-interface NewVoterForm {
-  voterId: string;
-  voterName: string;
-}
-
 const OfficerPanel = () => {
   const [activeSession, setActiveSession] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scannerStatus, setScannerStatus] = useState<ScannerStatus>({ connected: false, message: 'Not connected' });
-  const [scanningStatus, setScanningStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle');
-  const [scanProgress, setScanProgress] = useState(0);
-  const [showNewVoterForm, setShowNewVoterForm] = useState(false);
-  const [newVoter, setNewVoter] = useState<NewVoterForm>({ voterId: '', voterName: '' });
+  const [scanningStatus, setScanningStatus] = useState<'idle' | 'scanning' | 'matching' | 'success' | 'error'>('idle');
+  const [voterId, setVoterId] = useState('');
   const [currentVoter, setCurrentVoter] = useState<VoterVerification | null>(null);
 
   // Mock data for recent verifications
@@ -41,19 +33,12 @@ const OfficerPanel = () => {
       timestamp: new Date().toISOString(),
       status: 'verified',
       verifiedBy: 'Officer 1'
-    },
-    {
-      id: '2',
-      voterId: 'VOT002',
-      voterName: 'Jane Smith',
-      timestamp: new Date().toISOString(),
-      status: 'pending'
     }
   ]);
 
   // Simulate scanner connection check
   const checkScannerConnection = async () => {
-    setScannerStatus({ connected: false, message: 'Checking connection...' });
+    setScannerStatus({ connected: false, message: 'Checking R307S Scanner...' });
     
     // Simulate connection check delay
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -73,7 +58,9 @@ const OfficerPanel = () => {
     const isConnected = await checkScannerConnection();
     if (isConnected) {
       setActiveSession(true);
-      setShowNewVoterForm(true);
+      setVoterId('');
+      setCurrentVoter(null);
+      setScanningStatus('idle');
     } else {
       setError('Unable to start session. Scanner not connected.');
     }
@@ -83,74 +70,93 @@ const OfficerPanel = () => {
     setActiveSession(false);
     setScannerStatus({ connected: false, message: 'Not connected' });
     setScanningStatus('idle');
-    setScanProgress(0);
-    setShowNewVoterForm(false);
+    setVoterId('');
     setCurrentVoter(null);
   };
 
-  const simulateFingerPrintScan = async () => {
-    setScanningStatus('scanning');
-    setScanProgress(0);
+  const mockFetchVoterDetails = async (id: string): Promise<VoterVerification | null> => {
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Simulate scanning progress with Arduino-like feedback
-    const steps = [
-      { progress: 20, message: 'Initializing scanner...' },
-      { progress: 40, message: 'Capturing fingerprint...' },
-      { progress: 60, message: 'Processing image...' },
-      { progress: 80, message: 'Matching fingerprint...' },
-      { progress: 100, message: 'Verification complete' }
-    ];
-
-    for (const step of steps) {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      setScanProgress(step.progress);
+    // Mock database check (70% success rate)
+    if (Math.random() < 0.7) {
+      return {
+        id: Math.random().toString(36).substr(2, 9),
+        voterId: id,
+        voterName: `Voter ${id}`,
+        timestamp: new Date().toISOString(),
+        status: 'pending'
+      };
     }
+    return null;
+  };
+
+  const simulateFingerPrintScan = async () => {
+    if (!currentVoter) return false;
     
-    // Simulate scan result (80% success rate)
+    setScanningStatus('scanning');
+    
+    // Step 1: Initialize scanner
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Step 2: Capture fingerprint
+    setScanningStatus('scanning');
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // Step 3: Match with database
+    setScanningStatus('matching');
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    
+    // Simulate match result (80% success rate)
     const success = Math.random() < 0.8;
     setScanningStatus(success ? 'success' : 'error');
     
     return success;
   };
 
-  const handleAddNewVoter = () => {
-    if (!newVoter.voterId || !newVoter.voterName) {
-      setError('Please fill in all fields');
+  const handleVoterIdSubmit = async () => {
+    if (!voterId.trim()) {
+      setError('Please enter a Voter ID');
       return;
     }
 
-    const voter: VoterVerification = {
-      id: Math.random().toString(36).substr(2, 9),
-      voterId: newVoter.voterId,
-      voterName: newVoter.voterName,
-      timestamp: new Date().toISOString(),
-      status: 'pending'
-    };
-
-    setRecentVerifications(prev => [voter, ...prev]);
-    setCurrentVoter(voter);
-    setShowNewVoterForm(false);
-    setNewVoter({ voterId: '', voterName: '' });
+    setLoading(true);
     setError(null);
+    try {
+      const voter = await mockFetchVoterDetails(voterId);
+      if (voter) {
+        setCurrentVoter(voter);
+      } else {
+        throw new Error('Voter not found in database');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch voter details');
+      setCurrentVoter(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleVerifyVoter = async (voterId: string) => {
+  const handleVerifyVoter = async () => {
+    if (!currentVoter) return;
+    
     setLoading(true);
     try {
       const scanSuccess = await simulateFingerPrintScan();
       
       if (scanSuccess) {
-        // Simulate backend verification
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Update verification status
+        const updatedVoter = {
+          ...currentVoter,
+          status: 'verified' as const,
+          verifiedBy: 'Current Officer',
+          timestamp: new Date().toISOString()
+        };
         
-        setRecentVerifications(prev => prev.map(v => 
-          v.voterId === voterId 
-            ? { ...v, status: 'verified', verifiedBy: 'Current Officer', timestamp: new Date().toISOString() }
-            : v
-        ));
-        setError(null);
+        setRecentVerifications(prev => [updatedVoter, ...prev]);
         setCurrentVoter(null);
-        setShowNewVoterForm(true);
+        setVoterId('');
+        setError(null);
       } else {
         throw new Error('Fingerprint verification failed');
       }
@@ -161,17 +167,22 @@ const OfficerPanel = () => {
     }
   };
 
-  const handleRejectVoter = async (voterId: string) => {
+  const handleRejectVoter = async () => {
+    if (!currentVoter) return;
+    
     setLoading(true);
     try {
-      setRecentVerifications(prev => prev.map(v => 
-        v.voterId === voterId 
-          ? { ...v, status: 'rejected', verifiedBy: 'Current Officer', timestamp: new Date().toISOString() }
-          : v
-      ));
-      setError(null);
+      const updatedVoter = {
+        ...currentVoter,
+        status: 'rejected' as const,
+        verifiedBy: 'Current Officer',
+        timestamp: new Date().toISOString()
+      };
+      
+      setRecentVerifications(prev => [updatedVoter, ...prev]);
       setCurrentVoter(null);
-      setShowNewVoterForm(true);
+      setVoterId('');
+      setError(null);
     } catch (err) {
       setError('Failed to update voter status');
     } finally {
@@ -251,52 +262,35 @@ const OfficerPanel = () => {
         {activeSession && (
           <div className="bg-white shadow rounded-lg mb-6">
             <div className="p-6">
-              {/* New Voter Form */}
-              {showNewVoterForm && (
+              {/* Voter ID Input */}
+              {!currentVoter && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">New Voter</h3>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                      <label htmlFor="voterId" className="block text-sm font-medium text-gray-700">
-                        Voter ID
-                      </label>
-                      <input
-                        type="text"
-                        id="voterId"
-                        value={newVoter.voterId}
-                        onChange={(e) => setNewVoter(prev => ({ ...prev, voterId: e.target.value }))}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="voterName" className="block text-sm font-medium text-gray-700">
-                        Voter Name
-                      </label>
-                      <input
-                        type="text"
-                        id="voterName"
-                        value={newVoter.voterName}
-                        onChange={(e) => setNewVoter(prev => ({ ...prev, voterName: e.target.value }))}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      />
-                    </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Enter Voter ID</h3>
+                  <div className="flex gap-4">
+                    <input
+                      type="text"
+                      value={voterId}
+                      onChange={(e) => setVoterId(e.target.value)}
+                      placeholder="Enter Voter ID"
+                      className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={handleVoterIdSubmit}
+                      disabled={loading || !scannerStatus.connected}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      Verify ID
+                    </button>
                   </div>
-                  <button
-                    onClick={handleAddNewVoter}
-                    className="mt-4 flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                  >
-                    <UserPlus size={20} />
-                    Add Voter
-                  </button>
                 </div>
               )}
 
               {/* Current Voter Verification */}
               {currentVoter && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Current Voter</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Voter Verification</h3>
                   <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>
                         <span className="text-sm text-gray-500">Voter ID:</span>
                         <p className="font-medium">{currentVoter.voterId}</p>
@@ -309,44 +303,64 @@ const OfficerPanel = () => {
                     
                     {/* Fingerprint Scanner Status */}
                     {scanningStatus !== 'idle' && (
-                      <div className="mt-4">
+                      <div className="mb-4">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm font-medium text-gray-700">
-                            {scanningStatus === 'scanning' ? 'Scanning Fingerprint...' : 
-                             scanningStatus === 'success' ? 'Scan Successful' : 'Scan Failed'}
+                            {scanningStatus === 'scanning' ? 'Capturing Fingerprint...' :
+                             scanningStatus === 'matching' ? 'Matching with Database...' :
+                             scanningStatus === 'success' ? 'Verification Successful' :
+                             'Verification Failed'}
                           </span>
-                          <span className="text-sm text-gray-500">{scanProgress}%</span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className={`h-2 rounded-full transition-all duration-500 ${
-                              scanningStatus === 'success' ? 'bg-green-500' :
-                              scanningStatus === 'error' ? 'bg-red-500' :
-                              'bg-blue-500'
-                            }`}
-                            style={{ width: `${scanProgress}%` }}
-                          />
+                        <div className="relative pt-1">
+                          <div className="flex mb-2 items-center justify-between">
+                            <div>
+                              <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">
+                                {scanningStatus === 'scanning' ? 'Step 1/2' :
+                                 scanningStatus === 'matching' ? 'Step 2/2' :
+                                 'Complete'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200">
+                            <div
+                              className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center transition-all duration-500 ${
+                                scanningStatus === 'success' ? 'bg-green-500' :
+                                scanningStatus === 'error' ? 'bg-red-500' :
+                                'bg-blue-500'
+                              }`}
+                              style={{
+                                width: scanningStatus === 'scanning' ? '50%' :
+                                       scanningStatus === 'matching' ? '75%' :
+                                       '100%'
+                              }}
+                            />
+                          </div>
                         </div>
                         {scanningStatus === 'success' && (
-                          <p className="mt-2 text-sm text-green-600">Fingerprint matched successfully</p>
+                          <div className="text-sm text-green-600 mt-2">
+                            ✓ Fingerprint matched with database record
+                          </div>
                         )}
                         {scanningStatus === 'error' && (
-                          <p className="mt-2 text-sm text-red-600">Fingerprint verification failed</p>
+                          <div className="text-sm text-red-600 mt-2">
+                            ✗ No matching fingerprint found
+                          </div>
                         )}
                       </div>
                     )}
 
-                    <div className="mt-4 flex gap-2">
+                    <div className="flex gap-2">
                       <button
-                        onClick={() => handleVerifyVoter(currentVoter.voterId)}
+                        onClick={handleVerifyVoter}
                         className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                        disabled={loading || !scannerStatus.connected}
+                        disabled={loading || !scannerStatus.connected || scanningStatus !== 'idle'}
                       >
                         <Fingerprint size={20} />
                         Start Verification
                       </button>
                       <button
-                        onClick={() => handleRejectVoter(currentVoter.voterId)}
+                        onClick={handleRejectVoter}
                         className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
                         disabled={loading}
                       >
