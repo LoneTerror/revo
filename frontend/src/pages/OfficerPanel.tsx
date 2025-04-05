@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserCheck, UserX, AlertCircle, Clock, Fingerprint, Usb, CheckCircle, XCircle } from 'lucide-react';
+import { UserCheck, UserX, AlertCircle, Clock, Fingerprint, Usb, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 
 interface VoterVerification {
   id: string;
@@ -23,8 +23,6 @@ const OfficerPanel = () => {
   const [scanningStatus, setScanningStatus] = useState<'idle' | 'scanning' | 'matching' | 'success' | 'error'>('idle');
   const [voterId, setVoterId] = useState('');
   const [currentVoter, setCurrentVoter] = useState<VoterVerification | null>(null);
-
-  // Mock data for recent verifications
   const [recentVerifications, setRecentVerifications] = useState<VoterVerification[]>([
     {
       id: '1',
@@ -35,50 +33,62 @@ const OfficerPanel = () => {
       verifiedBy: 'Officer 1'
     }
   ]);
+  const [retryCount, setRetryCount] = useState(0);
 
-  // Simulate scanner connection check
+  // Reset verification states
+  const resetVerificationState = () => {
+    setVoterId('');
+    setCurrentVoter(null);
+    setScanningStatus('idle');
+    setError(null);
+    setRetryCount(0);
+  };
+
+  // Simulate scanner connection check with decreasing failure probability
   const checkScannerConnection = async () => {
     setScannerStatus({ connected: false, message: 'Checking R307S Scanner...' });
-    
-    // Simulate connection check delay
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Simulate 80% success rate
-    const isConnected = Math.random() < 0.8;
+    // Increase success probability with each retry (80% base + 5% per retry, max 95%)
+    const successProbability = Math.min(0.8 + (retryCount * 0.05), 0.95);
+    const isConnected = Math.random() < successProbability;
     
     setScannerStatus({
       connected: isConnected,
       message: isConnected ? 'R307S Scanner connected and ready' : 'Scanner not found. Please check connection.'
     });
-    
     return isConnected;
   };
 
   const handleStartSession = async () => {
+    resetVerificationState();
     const isConnected = await checkScannerConnection();
     if (isConnected) {
       setActiveSession(true);
-      setVoterId('');
-      setCurrentVoter(null);
-      setScanningStatus('idle');
     } else {
       setError('Unable to start session. Scanner not connected.');
+    }
+  };
+
+  const handleRetryConnection = async () => {
+    setRetryCount(prev => prev + 1);
+    setError(null);
+    const isConnected = await checkScannerConnection();
+    if (isConnected) {
+      setActiveSession(true);
+    } else {
+      setError('Unable to start session. Scanner not connected. Please try again.');
     }
   };
 
   const handleEndSession = () => {
     setActiveSession(false);
     setScannerStatus({ connected: false, message: 'Not connected' });
-    setScanningStatus('idle');
-    setVoterId('');
-    setCurrentVoter(null);
+    resetVerificationState();
   };
 
   const mockFetchVoterDetails = async (id: string): Promise<VoterVerification | null> => {
-    // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock database check (70% success rate)
     if (Math.random() < 0.7) {
       return {
         id: Math.random().toString(36).substr(2, 9),
@@ -95,20 +105,14 @@ const OfficerPanel = () => {
     if (!currentVoter) return false;
     
     setScanningStatus('scanning');
-    
-    // Step 1: Initialize scanner
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Step 2: Capture fingerprint
-    setScanningStatus('scanning');
+    setScanningStatus('matching');
     await new Promise(resolve => setTimeout(resolve, 3000));
     
-    // Step 3: Match with database
-    setScanningStatus('matching');
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    
-    // Simulate match result (80% success rate)
-    const success = Math.random() < 0.8;
+    // Increase success probability with each retry (70% base + 10% per retry, max 90%)
+    const successProbability = Math.min(0.7 + (retryCount * 0.1), 0.9);
+    const success = Math.random() < successProbability;
     setScanningStatus(success ? 'success' : 'error');
     
     return success;
@@ -122,6 +126,9 @@ const OfficerPanel = () => {
 
     setLoading(true);
     setError(null);
+    setScanningStatus('idle');
+    setRetryCount(0);
+    
     try {
       const voter = await mockFetchVoterDetails(voterId);
       if (voter) {
@@ -145,7 +152,6 @@ const OfficerPanel = () => {
       const scanSuccess = await simulateFingerPrintScan();
       
       if (scanSuccess) {
-        // Update verification status
         const updatedVoter = {
           ...currentVoter,
           status: 'verified' as const,
@@ -154,9 +160,7 @@ const OfficerPanel = () => {
         };
         
         setRecentVerifications(prev => [updatedVoter, ...prev]);
-        setCurrentVoter(null);
-        setVoterId('');
-        setError(null);
+        resetVerificationState();
       } else {
         throw new Error('Fingerprint verification failed');
       }
@@ -165,6 +169,13 @@ const OfficerPanel = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRetryFingerprint = async () => {
+    setRetryCount(prev => prev + 1);
+    setError(null);
+    setScanningStatus('idle');
+    await handleVerifyVoter();
   };
 
   const handleRejectVoter = async () => {
@@ -180,9 +191,7 @@ const OfficerPanel = () => {
       };
       
       setRecentVerifications(prev => [updatedVoter, ...prev]);
-      setCurrentVoter(null);
-      setVoterId('');
-      setError(null);
+      resetVerificationState();
     } catch (err) {
       setError('Failed to update voter status');
     } finally {
@@ -244,16 +253,27 @@ const OfficerPanel = () => {
                   </div>
                 </div>
               </div>
-              <button
-                onClick={activeSession ? handleEndSession : handleStartSession}
-                className={`px-4 py-2 rounded-md text-sm font-medium ${
-                  activeSession
-                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-              >
-                {activeSession ? 'End Session' : 'Start Session'}
-              </button>
+              <div className="flex gap-2">
+                {!scannerStatus.connected && error && (
+                  <button
+                    onClick={handleRetryConnection}
+                    className="px-4 py-2 rounded-md text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 flex items-center gap-2"
+                  >
+                    <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+                    Retry Connection
+                  </button>
+                )}
+                <button
+                  onClick={activeSession ? handleEndSession : handleStartSession}
+                  className={`px-4 py-2 rounded-md text-sm font-medium ${
+                    activeSession
+                      ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  {activeSession ? 'End Session' : 'Start Session'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -351,14 +371,25 @@ const OfficerPanel = () => {
                     )}
 
                     <div className="flex gap-2">
-                      <button
-                        onClick={handleVerifyVoter}
-                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                        disabled={loading || !scannerStatus.connected || scanningStatus !== 'idle'}
-                      >
-                        <Fingerprint size={20} />
-                        Start Verification
-                      </button>
+                      {scanningStatus === 'error' ? (
+                        <button
+                          onClick={handleRetryFingerprint}
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                          disabled={loading}
+                        >
+                          <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                          Retry Scan
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleVerifyVoter}
+                          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                          disabled={loading || !scannerStatus.connected || scanningStatus !== 'idle'}
+                        >
+                          <Fingerprint size={20} />
+                          Start Verification
+                        </button>
+                      )}
                       <button
                         onClick={handleRejectVoter}
                         className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
