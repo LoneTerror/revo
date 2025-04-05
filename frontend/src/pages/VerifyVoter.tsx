@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, UserCheck, UserX, Fingerprint, AlertCircle, CreditCard, ScanLine } from 'lucide-react';
+import { Search, UserCheck, UserX, Fingerprint, AlertCircle, CreditCard, ScanLine, Usb, CheckCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface VoterDetails {
@@ -19,7 +19,9 @@ const VerifyVoter = () => {
   const [voterDetails, setVoterDetails] = useState<VoterDetails | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [fingerPrintStatus, setFingerPrintStatus] = useState<'waiting' | 'scanning' | 'matched' | 'not_matched' | null>(null);
+  const [scannerStatus, setScannerStatus] = useState({ connected: false, message: 'Not connected' });
+  const [scanningStatus, setScanningStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle');
+  const [scanProgress, setScanProgress] = useState(0);
   const { role } = useAuth();
 
   const handleSearch = async () => {
@@ -30,7 +32,8 @@ const VerifyVoter = () => {
 
     setLoading(true);
     setError('');
-    setFingerPrintStatus(null);
+    setScanningStatus('idle');
+    setScanProgress(0);
 
     try {
       const response = await fetch(`http://localhost:5006/verify/${voterId}`);
@@ -41,7 +44,6 @@ const VerifyVoter = () => {
 
       const data = await response.json();
       setVoterDetails(data);
-      setFingerPrintStatus('waiting');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
       setVoterDetails(null);
@@ -50,18 +52,29 @@ const VerifyVoter = () => {
     }
   };
 
+  const simulateFingerPrintScan = async () => {
+    setScanningStatus('scanning');
+    setScanProgress(0);
+    
+    // Simulate scanning progress
+    for (let i = 0; i <= 100; i += 20) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setScanProgress(i);
+    }
+    
+    // Simulate scan result (80% success rate)
+    const success = Math.random() < 0.8;
+    setScanningStatus(success ? 'success' : 'error');
+    
+    return success;
+  };
+
   const handleFingerprintOnlyVerification = async () => {
     setLoading(true);
     setError('');
-    setFingerPrintStatus('scanning');
-    setVoterDetails(null);
-
+    
     try {
-      // Simulate API call to verify fingerprint and get voter details
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // For demo purposes, randomly succeed or fail
-      const success = Math.random() > 0.3;
+      const success = await simulateFingerPrintScan();
       
       if (success) {
         // Mock data - in real implementation, this would come from the API
@@ -74,9 +87,7 @@ const VerifyVoter = () => {
         } as VoterDetails;
         
         setVoterDetails(mockVoterData);
-        setFingerPrintStatus('matched');
       } else {
-        setFingerPrintStatus('not_matched');
         throw new Error('Fingerprint not found in database');
       }
     } catch (err: unknown) {
@@ -87,11 +98,25 @@ const VerifyVoter = () => {
     }
   };
 
-  const simulateFingerPrintScan = async () => {
-    setFingerPrintStatus('scanning');
+  const checkScannerConnection = async () => {
+    setScannerStatus({ connected: false, message: 'Checking connection...' });
+    
+    // Simulate connection check delay
     await new Promise(resolve => setTimeout(resolve, 2000));
-    setFingerPrintStatus(Math.random() > 0.3 ? 'matched' : 'not_matched');
+    
+    // Simulate 80% success rate
+    const isConnected = Math.random() < 0.8;
+    
+    setScannerStatus({
+      connected: isConnected,
+      message: isConnected ? 'R307S Scanner connected and ready' : 'Scanner not found. Please check connection.'
+    });
   };
+
+  // Check scanner connection on component mount
+  React.useEffect(() => {
+    checkScannerConnection();
+  }, []);
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -112,6 +137,23 @@ const VerifyVoter = () => {
             <p className="text-blue-100 text-sm mt-1">
               Verify voter eligibility using ID or fingerprint
             </p>
+          </div>
+
+          {/* Scanner Status */}
+          <div className="px-6 py-3 bg-gray-50 border-b">
+            <div className={`flex items-center gap-2 text-sm ${scannerStatus.connected ? 'text-green-600' : 'text-gray-500'}`}>
+              {scannerStatus.connected ? (
+                <>
+                  <CheckCircle size={16} />
+                  <span>{scannerStatus.message}</span>
+                </>
+              ) : (
+                <>
+                  <Usb size={16} />
+                  <span>{scannerStatus.message}</span>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Verification Method Tabs */}
@@ -168,12 +210,41 @@ const VerifyVoter = () => {
               <div className="text-center">
                 <button
                   onClick={handleFingerprintOnlyVerification}
-                  disabled={loading}
+                  disabled={loading || !scannerStatus.connected}
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 flex items-center gap-2 mx-auto"
                 >
                   <Fingerprint size={20} />
                   {loading ? 'Scanning...' : 'Start Fingerprint Scan'}
                 </button>
+              </div>
+            )}
+
+            {/* Scanning Progress */}
+            {scanningStatus !== 'idle' && (
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">
+                    {scanningStatus === 'scanning' ? 'Scanning Fingerprint...' : 
+                     scanningStatus === 'success' ? 'Scan Successful' : 'Scan Failed'}
+                  </span>
+                  <span className="text-sm text-gray-500">{scanProgress}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className={`h-2 rounded-full transition-all duration-500 ${
+                      scanningStatus === 'success' ? 'bg-green-500' :
+                      scanningStatus === 'error' ? 'bg-red-500' :
+                      'bg-blue-500'
+                    }`}
+                    style={{ width: `${scanProgress}%` }}
+                  />
+                </div>
+                {scanningStatus === 'success' && (
+                  <p className="mt-2 text-sm text-green-600">Fingerprint matched successfully</p>
+                )}
+                {scanningStatus === 'error' && (
+                  <p className="mt-2 text-sm text-red-600">Fingerprint verification failed</p>
+                )}
               </div>
             )}
 
@@ -225,13 +296,13 @@ const VerifyVoter = () => {
                     <div className="p-4 bg-gray-50 rounded-lg space-y-4">
                       <div className="flex items-center justify-between">
                         <span className="text-gray-700">Fingerprint Verification</span>
-                        {fingerPrintStatus === 'matched' && (
+                        {scanningStatus === 'success' && (
                           <span className="flex items-center gap-1 text-green-600">
                             <UserCheck size={20} />
                             Matched
                           </span>
                         )}
-                        {fingerPrintStatus === 'not_matched' && (
+                        {scanningStatus === 'error' && (
                           <span className="flex items-center gap-1 text-red-600">
                             <UserX size={20} />
                             Not Matched
@@ -242,21 +313,21 @@ const VerifyVoter = () => {
                       {role === 'officer' && voterDetails.status === 'pending' && (
                         <button
                           onClick={simulateFingerPrintScan}
-                          disabled={fingerPrintStatus === 'scanning'}
+                          disabled={scanningStatus === 'scanning' || !scannerStatus.connected}
                           className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                           <Fingerprint size={20} />
-                          {fingerPrintStatus === 'scanning' ? 'Scanning...' : 'Start Fingerprint Scan'}
+                          {scanningStatus === 'scanning' ? 'Scanning...' : 'Start Fingerprint Scan'}
                         </button>
                       )}
 
-                      {fingerPrintStatus === 'matched' && (
+                      {scanningStatus === 'success' && (
                         <div className="mt-4 p-4 bg-green-50 rounded-lg text-green-700 text-sm">
                           Fingerprint verified successfully. Voter is eligible to cast their vote.
                         </div>
                       )}
 
-                      {fingerPrintStatus === 'not_matched' && (
+                      {scanningStatus === 'error' && (
                         <div className="mt-4 p-4 bg-red-50 rounded-lg text-red-700 text-sm">
                           Fingerprint verification failed. Please verify the voter's identity through alternative means.
                         </div>
