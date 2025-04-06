@@ -113,11 +113,11 @@ const Login = () => {
           </button>
         </form>
 
-        {/* <div className="mt-4 text-sm text-gray-600 text-center">
+        <div className="mt-4 text-sm text-gray-600 text-center">
           <p>Demo Credentials:</p>
           <p>Admin: admin / admin123</p>
           <p>Officer: officer / officer123</p>
-        </div> */}
+        </div>
       </div>
     </div>
   );
