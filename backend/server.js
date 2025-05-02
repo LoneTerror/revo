@@ -49,5 +49,5 @@ app.get('/verify/:voterId', async (req, res) => {
 });
 
 app.listen(5007, () => console.log("Server running on port 5007"));
-console.log("Access The Domain Here" + "https://revvote.site");
-console.log("Access The Backend Here" + "https://revvote.site/api");
+console.log("Access The Domain Here: " + "https://revvote.site");
+console.log("Access The Backend Here: " + "https://revvote.site/api");
